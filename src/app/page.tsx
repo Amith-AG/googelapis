@@ -2,10 +2,9 @@
 import { useState, useMemo } from "react";
 import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
 import {
-  CommandDialog,
+ 
   CommandList,
   Command,
-  CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -14,6 +13,11 @@ import usePlacesAutocomplete, {
   getGeocode,
   getLatLng,
 } from "use-places-autocomplete";
+
+interface PlacesAutocompleteProps {
+  setSelected: (selected: { lat: number; lng: number } | null) => void;
+}
+
 
 export default function Places() {
   const { isLoaded } = useLoadScript({
@@ -26,27 +30,28 @@ export default function Places() {
 }
 
 function Map() {
+  const [selected, setSelected] = useState<{ lat:number,lng:number } | null>(null);
   const center = useMemo(() => ({ lat: 43.45, lng: -80.49 }), []);
-  const [selected, setSelected] = useState(null);
-
+  
   return (
     <>
-      <div className="places-container">
+      <div  >
         <PlacesAutocomplete setSelected={setSelected} />
       </div>
-
       <GoogleMap
         zoom={10}
-        center={{ lat: 43.45, lng: -80.49 }}
+        center={center}
         mapContainerClassName="map-container"
       >
         {selected && <Marker position={selected} />}
       </GoogleMap>
+     
     </>
   );
 }
 
-const PlacesAutocomplete = ({ setSelected }: any) => {
+ 
+const PlacesAutocomplete: React.FC<PlacesAutocompleteProps>= ({ setSelected} ) => {
   const {
     ready,
     value,
@@ -55,38 +60,40 @@ const PlacesAutocomplete = ({ setSelected }: any) => {
     clearSuggestions,
   } = usePlacesAutocomplete();
 
-  const handleSelect = async (address: string) => {
+  const handleSelect = async (address:string) => {
     setValue(address, false);
     clearSuggestions();
 
     const results = await getGeocode({ address });
     const { lat, lng } = await getLatLng(results[0]);
-    setSelected({ lat, lng });
+    console.log(lat)
+    console.log(lng)
+
+    setSelected({lat,lng });
   };
 
   return (
-    <Command>
-      <CommandInput
-        value={value}
-        onValueChange={(value) => {
-          setValue(value);
-        }}
-        disabled={!ready}
-        placeholder="Search an address"
-        className="combobox-input"
-      />
-      <CommandList>
-        <CommandGroup>
-          {status === "OK" &&
-            data.map(({ place_id, description }) => (
-              <CommandItem
-                key={place_id}
-                value={description}
-                onSelect={handleSelect}
-              />
-            ))}
-        </CommandGroup>
-      </CommandList>
+    <Command >
+    <CommandInput
+    value={value}
+    onValueChange={setValue}
+    disabled={!ready}
+    placeholder="Search an address"
+    className="combobox-input"
+    />
+    <CommandList >
+    <CommandGroup>
+    {status === "OK" &&
+    data.map(({ place_id, description }) => (
+    <CommandItem key={place_id} onSelect={handleSelect} >
+    
+    {description}
+    
+    </CommandItem>
+    ))}
+    </CommandGroup>
+    </CommandList>
     </Command>
-  );
+    
+    );
 };
